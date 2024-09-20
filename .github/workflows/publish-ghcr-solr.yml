@@ -77,6 +77,9 @@ jobs:
               file: solr-${{ inputs.solr_version }}/${{ matrix.dockerfile }}
               push: false
               tags: ${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}
+          
+          - name: Run Solr container
+            run: docker run --name ckan-solr -p 8983:8983 -d ${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}
     
           - name: Clone CKAN repository
             run: git clone https://github.com/ckan/ckan.git
