@@ -64,6 +64,7 @@ jobs:
                 echo "suffix_tag=-spatial" >> $GITHUB_OUTPUT
               else
                 echo "suffix_tag=" >> $GITHUB_OUTPUT
+              fi
     
           - name: Set image tag
             id: set_tag
