@@ -43,9 +43,6 @@ jobs:
           DATASTORE_READ_URL: postgresql://datastore_read:pass@localhost/datastore_test
           SOLR_URL: http://localhost:8983/solr/ckan
           REDIS_URL: redis://localhost:6379/1
-        outputs:
-          image_tag: ${{ steps.set_tag.outputs.image_tag }}
-          suffix_tag: ${{ steps.generate_suffix.outputs.suffix_tag }}
         steps: 
           - name: Check out code
             uses: actions/checkout@v4
@@ -138,6 +135,21 @@ jobs:
         - name: Check out code
           uses: actions/checkout@v4
 
+        - name: Generate suffix tag
+          id: generate_suffix
+          run: |
+            if [ "${{ matrix.dockerfile }}" = "Dockerfile" ]; then
+              echo "suffix_tag=" >> $GITHUB_OUTPUT
+            elif [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
+              echo "suffix_tag=-spatial" >> $GITHUB_OUTPUT
+            else
+              echo "suffix_tag=" >> $GITHUB_OUTPUT
+            fi
+    
+        - name: Set image tag
+          id: set_tag
+          run: echo "image_tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}" >> $GITHUB_OUTPUT
+
         - name: Generate description
           id: generate_description
           run: |
@@ -161,7 +173,7 @@ jobs:
             images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
             labels: |
                 org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/README.md
-                org.opencontainers.image.version=${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ needs.build-and-test.outputs.suffix_tag }}
+                org.opencontainers.image.version=${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}
             annotations: |
                 org.opencontainers.image.description=${{ steps.generate_description.outputs.description }}
                 org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -170,7 +182,7 @@ jobs:
           uses: docker/build-push-action@v6
           with:
             push: true
-            tags: ${{ needs.build-and-test.outputs.image_tag }}
+            tags: ${{ steps.set_tag.outputs.image_tag }}
             labels: ${{ steps.meta.outputs.labels }}
             annotations: ${{ steps.meta.outputs.annotations }}
             platforms: linux/amd64,linux/arm64
@@ -186,7 +198,7 @@ jobs:
         - name: Run Trivy container image vulnerability scanner
           uses: aquasecurity/trivy-action@0.24.0
           with:
-            image-ref: ${{ needs.build-and-test.outputs.image_tag }}
+            image-ref: ${{ steps.set_tag.outputs.image_tag }}
             format: sarif
             output: trivy-results-base.sarif
 
