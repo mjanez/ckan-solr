@@ -1,0 +1,3 @@
+<!-- DCAT-AP-ES / NTI-RISP (tesauros y tipos propios del perfil español) -->
+<field name="theme_es" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="dataset_scope" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>

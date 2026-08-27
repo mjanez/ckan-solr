@@ -1,0 +1,21 @@
+<!-- DCAT-AP / DCAT-AP 3 / GeoDCAT-AP facet fields (string + docValues; extras_* is tokenized) -->
+<field name="tag_uri" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="theme" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="theme_eu" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="language" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="dcat_type" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="conforms_to" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="applicable_legislation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="hvd_category" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="publisher_name" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="publisher_type" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="frequency" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="endpoint_url" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="serves_dataset" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="reference" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="is_referenced_by" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="resource_relation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="documentation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="metadata_profile" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="lineage_source" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<field name="lineage_process_steps" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
