@@ -220,7 +220,7 @@ jobs:
             SOLR_VERSION=${{ inputs.solr_image_version }}
 
       - name: Lint Dockerfile with hadolint
-        uses: hadolint/hadolint-action@v3.50
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
           no-fail: true
