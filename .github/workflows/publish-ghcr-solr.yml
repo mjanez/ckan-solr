@@ -1,209 +1,239 @@
 name: Build and push ckan-solr images (Reusable)
 
 on:
-    workflow_call:
-      inputs:
-        ckan_version:
-          required: true
-          type: string
-        ckan_branch:
-          required: true
-          type: string
-        solr_version:
-          required: true
-          type: string
+  workflow_call:
+    inputs:
+      ckan_version:
+        required: true
+        type: string
+      ckan_branch:
+        required: true
+        type: string
+      solr_version:
+        required: true
+        type: string
+      solr_image_version:
+        required: true
+        type: string
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: mjanez/ckan-solr
   CONTEXT: solr-${{ inputs.solr_version }}
 
 jobs:
-    build-and-test:
-        runs-on: ubuntu-20.04
-        strategy:
-            matrix:
-                dockerfile: [Dockerfile, Dockerfile.spatial]
-        services:
-          postgres:
-            image: ckan/ckan-postgres-dev:master
-            env:
-              POSTGRES_USER: postgres
-              POSTGRES_PASSWORD: postgres
-              POSTGRES_DB: postgres
-            options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-            ports:
-              - 5432:5432
-          redis:
-            image: redis:3
-            ports:
-              - 6379:6379
+  build-and-test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile, Dockerfile.spatial]
+    services:
+      postgres:
+        image: ckan/ckan-postgres-dev:${{ inputs.ckan_version }}
         env:
-          SQLALCHEMY_URL: postgresql://ckan_default:pass@localhost/ckan_test
-          DATASTORE_WRITE_URL: postgresql://datastore_write:pass@localhost/datastore_test
-          DATASTORE_READ_URL: postgresql://datastore_read:pass@localhost/datastore_test
-          SOLR_URL: http://localhost:8983/solr/ckan
-          REDIS_URL: redis://localhost:6379/1
-        steps: 
-          - name: Check out code
-            uses: actions/checkout@v4
-    
-          - name: Set up Python
-            uses: actions/setup-python@v5
-            with:
-              python-version: 3.9
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    env:
+      SQLALCHEMY_URL: postgresql://ckan_default:pass@localhost/ckan_test
+      DATASTORE_WRITE_URL: postgresql://datastore_write:pass@localhost/datastore_test
+      DATASTORE_READ_URL: postgresql://datastore_read:pass@localhost/datastore_test
+      SOLR_URL: http://localhost:8983/solr/ckan
+      REDIS_URL: redis://localhost:6379/1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-          - name: Generate suffix tag
-            id: generate_suffix
-            run: |
-              if [ "${{ matrix.dockerfile }}" = "Dockerfile" ]; then
-                echo "suffix_tag=" >> $GITHUB_OUTPUT
-              elif [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
-                echo "suffix_tag=-spatial" >> $GITHUB_OUTPUT
-              else
-                echo "suffix_tag=" >> $GITHUB_OUTPUT
-              fi
-    
-          - name: Set image tag
-            id: set_tag
-            run: echo "image_tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-          - name: Build Solr image
-            uses: docker/build-push-action@v6
-            with:
-              context: solr-${{ inputs.solr_version }}
-              file: solr-${{ inputs.solr_version }}/${{ matrix.dockerfile }}
-              push: false
-              tags: ${{ steps.set_tag.outputs.image_tag }}
-          
-          - name: Run Solr container
-            run: docker run --name ckan-solr -p 8983:8983 -d ${{ steps.set_tag.outputs.image_tag }}
-    
-          - name: Clone CKAN repository
-            run: git clone https://github.com/ckan/ckan.git
-    
-          - name: Checkout CKAN ${{ inputs.ckan_branch }}
-            run: |
-              cd ckan
-              git checkout ${{ inputs.ckan_branch }}
-    
-          - name: Install requirements-setuptools.txt (CKAN 2.9 only)
-            if: ${{ inputs.ckan_branch == 'dev-v2.9'}}
-            run: |
-              cd ckan
-              pip install -r requirement-setuptools.txt
-              pip install wheel
-    
-          - name: Install requirements and CKAN
-            run: |
-              cd ckan
-              pip install -U pip
-              pip install -r requirements.txt
-              pip install -r dev-requirements.txt
-              pip install -e .
-              pip check
-    
-          - name: Set config file
-            run: |
-              cd ckan
-              ckan config-tool test-core.ini sqlalchemy.url=${SQLALCHEMY_URL}
-              ckan config-tool test-core.ini ckan.datastore.write_url=${DATASTORE_WRITE_URL}
-              ckan config-tool test-core.ini ckan.datastore.read_url=${DATASTORE_READ_URL}
-              ckan config-tool test-core.ini solr_url=${SOLR_URL}
-              ckan config-tool test-core.ini ckan.redis.url=${REDIS_URL}
-    
-          - name: Execute tests
-            run: |
-              cd ckan
-              ckan -c test-core.ini db init
-              pytest --ckan-ini=test-core.ini ckan/tests ckanext
+      - name: Generate suffix tag
+        id: generate_suffix
+        run: |
+          if [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
+            echo "suffix_tag=-spatial" >> "$GITHUB_OUTPUT"
+          else
+            echo "suffix_tag=" >> "$GITHUB_OUTPUT"
+          fi
 
+      - name: Set image tags
+        id: set_tag
+        run: |
+          BASE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}"
+          MINOR="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_image_version }}${{ steps.generate_suffix.outputs.suffix_tag }}"
+          echo "image_tag=${BASE}" >> "$GITHUB_OUTPUT"
+          echo "minor_tag=${MINOR}" >> "$GITHUB_OUTPUT"
 
-    push_to_ghcr:
-        needs: build-and-test
-        name: Build and push ckan-solr images
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                dockerfile: [Dockerfile, Dockerfile.spatial]
-        steps:
-        - name: Set up QEMU
-          uses: docker/setup-qemu-action@v3
+      - name: Build Solr image
+        uses: docker/build-push-action@v6
+        with:
+          context: solr-${{ inputs.solr_version }}
+          file: solr-${{ inputs.solr_version }}/${{ matrix.dockerfile }}
+          load: true
+          push: false
+          tags: |
+            ${{ steps.set_tag.outputs.image_tag }}
+            ${{ steps.set_tag.outputs.minor_tag }}
+          build-args: |
+            CKAN_BRANCH=${{ inputs.ckan_branch }}
+            SOLR_VERSION=${{ inputs.solr_image_version }}
 
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v3
+      - name: Assert CKAN schema name
+        run: |
+          SCHEMA=$(docker run --rm --entrypoint cat ${{ steps.set_tag.outputs.image_tag }} \
+            /opt/solr/server/solr/configsets/ckan/conf/managed-schema)
+          if [ "${{ inputs.ckan_version }}" = "2.9" ]; then
+            echo "$SCHEMA" | grep -E '<schema name="ckan"'
+          else
+            echo "$SCHEMA" | grep -F "name=\"ckan-${{ inputs.ckan_version }}\""
+          fi
+          if [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
+            echo "$SCHEMA" | grep -F 'name="spatial_geom"'
+            echo "$SCHEMA" | grep -F 'name="hvd_category"'
+            echo "$SCHEMA" | grep -F 'name="endpoint_url"'
+            echo "$SCHEMA" | grep -F 'name="dcat_type"'
+            echo "$SCHEMA" | grep -F 'name="theme_es"'
+            echo "$SCHEMA" | grep -F 'name="dataset_scope"'
+          fi
 
-        - name: Check out code
-          uses: actions/checkout@v4
+      - name: Run Solr container
+        run: docker run --name ckan-solr -p 8983:8983 -d ${{ steps.set_tag.outputs.image_tag }}
 
-        - name: Generate suffix tag
-          id: generate_suffix
-          run: |
-            if [ "${{ matrix.dockerfile }}" = "Dockerfile" ]; then
-              echo "suffix_tag=" >> $GITHUB_OUTPUT
-            elif [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
-              echo "suffix_tag=-spatial" >> $GITHUB_OUTPUT
-            else
-              echo "suffix_tag=" >> $GITHUB_OUTPUT
+      - name: Wait for Solr
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8983/solr/ckan/admin/ping; then
+              exit 0
             fi
-    
-        - name: Set image tag
-          id: set_tag
-          run: echo "image_tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}" >> $GITHUB_OUTPUT
+            sleep 2
+          done
+          echo "Solr did not become ready"
+          docker logs ckan-solr
+          exit 1
 
-        - name: Generate description
-          id: generate_description
-          run: |
-                if [ "${{ matrix.dockerfile }}" = "Dockerfile" ]; then
-                echo "description=This workflow builds and publishes Solr images for CKAN, an open-source data management system. It includes all necessary dependencies and configurations, with support for standard Solr configurations." >> $GITHUB_ENV
-                elif [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
-                echo "description=This workflow builds and publishes Solr images for CKAN, an open-source data management system. It includes all necessary dependencies and configurations, with support for both standard and spatial Solr configurations. Additionally, it includes compatibility for spatial fields from ckanext-spatial." >> $GITHUB_ENV
-                fi
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.ckan_version == '2.9' && '3.9' || '3.10' }}
 
-        - name: Login to GitHub Container Registry
-          uses: docker/login-action@v3
-          with:
-            registry: ${{ env.REGISTRY }}
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clone and install CKAN
+        run: |
+          git clone --depth 1 --branch ${{ inputs.ckan_branch }} https://github.com/ckan/ckan.git
+          cd ckan
+          pip install -U pip
+          if [ "${{ inputs.ckan_branch }}" = "dev-v2.9" ]; then
+            pip install -r requirement-setuptools.txt
+            pip install wheel
+          fi
+          pip install -r requirements.txt
+          pip install -r dev-requirements.txt
+          pip install -e .
+          ckan config-tool test-core.ini sqlalchemy.url=${SQLALCHEMY_URL}
+          ckan config-tool test-core.ini ckan.datastore.write_url=${DATASTORE_WRITE_URL}
+          ckan config-tool test-core.ini ckan.datastore.read_url=${DATASTORE_READ_URL}
+          ckan config-tool test-core.ini solr_url=${SOLR_URL}
+          ckan config-tool test-core.ini ckan.redis.url=${REDIS_URL}
+          ckan -c test-core.ini db init
 
-        - name: Extract Docker metadata
-          id: meta
-          uses: docker/metadata-action@v5
-          with:
-            images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            labels: |
-                org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/README.md
-                org.opencontainers.image.version=${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}
-            annotations: |
-                org.opencontainers.image.description=${{ steps.generate_description.outputs.description }}
-                org.opencontainers.image.source=https://github.com/${{ github.repository }}
+  push_to_ghcr:
+    needs: build-and-test
+    name: Build and push ckan-solr images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile, Dockerfile.spatial]
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-        - name: Build and push base image
-          uses: docker/build-push-action@v6
-          with:
-            push: true
-            tags: ${{ steps.set_tag.outputs.image_tag }}
-            labels: ${{ steps.meta.outputs.labels }}
-            annotations: ${{ steps.meta.outputs.annotations }}
-            platforms: linux/amd64,linux/arm64
-            context: ${{ env.CONTEXT }}
-            file: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
-            
-        - name: Linting Dockerfile with hadolint in GH Actions
-          uses: hadolint/hadolint-action@v3.1.0
-          with:
-            dockerfile: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
-            no-fail: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Run Trivy container image vulnerability scanner
-          uses: aquasecurity/trivy-action@0.24.0
-          with:
-            image-ref: ${{ steps.set_tag.outputs.image_tag }}
-            format: sarif
-            output: trivy-results-base.sarif
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-        - name: Upload Trivy scan results to GitHub Security tab
-          uses: github/codeql-action/upload-sarif@v3
-          if: always()
-          with:
-            sarif_file: trivy-results-base.sarif
+      - name: Generate suffix tag
+        id: generate_suffix
+        run: |
+          if [ "${{ matrix.dockerfile }}" = "Dockerfile.spatial" ]; then
+            echo "suffix_tag=-spatial" >> "$GITHUB_OUTPUT"
+          else
+            echo "suffix_tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set image tags
+        id: set_tag
+        run: |
+          BASE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}"
+          MINOR="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.ckan_version }}-solr${{ inputs.solr_image_version }}${{ steps.generate_suffix.outputs.suffix_tag }}"
+          echo "image_tag=${BASE}" >> "$GITHUB_OUTPUT"
+          echo "minor_tag=${MINOR}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}#readme
+            org.opencontainers.image.version=${{ inputs.ckan_version }}-solr${{ inputs.solr_version }}${{ steps.generate_suffix.outputs.suffix_tag }}
+            org.opencontainers.image.description=CKAN Solr ${{ inputs.ckan_version }} / Solr ${{ inputs.solr_image_version }}${{ matrix.dockerfile == 'Dockerfile.spatial' && ' with ckanext-spatial + DCAT facet fields' || '' }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            ${{ steps.set_tag.outputs.image_tag }}
+            ${{ steps.set_tag.outputs.minor_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          context: ${{ env.CONTEXT }}
+          file: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
+          build-args: |
+            CKAN_BRANCH=${{ inputs.ckan_branch }}
+            SOLR_VERSION=${{ inputs.solr_image_version }}
+
+      - name: Lint Dockerfile with hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
+          no-fail: true
+
+      - name: Run Trivy container image vulnerability scanner
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ steps.set_tag.outputs.image_tag }}
+          format: sarif
+          output: trivy-results-base.sarif
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results-base.sarif
