@@ -76,7 +76,7 @@ jobs:
           echo "minor_tag=${MINOR}" >> "$GITHUB_OUTPUT"
 
       - name: Build Solr image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: solr-${{ inputs.solr_version }}
           file: solr-${{ inputs.solr_version }}/${{ matrix.dockerfile }}
@@ -205,7 +205,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
           tags: |
@@ -220,20 +220,20 @@ jobs:
             SOLR_VERSION=${{ inputs.solr_image_version }}
 
       - name: Lint Dockerfile with hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.50
         with:
           dockerfile: ${{ env.CONTEXT }}/${{ matrix.dockerfile }}
           no-fail: true
 
       - name: Run Trivy container image vulnerability scanner
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.set_tag.outputs.image_tag }}
           format: sarif
           output: trivy-results-base.sarif
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-results-base.sarif
