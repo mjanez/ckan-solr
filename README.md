@@ -27,6 +27,13 @@ CKAN `solr_url`: **http://localhost:8983/solr/ckan**
 
 The schema `name` attribute is taken from the matching CKAN branch (`dev-v2.10` -> `ckan-2.10`, `dev-v2.11` -> `ckan-2.11`). CKAN will not start if it does not match the series.
 
+The following tags are no longer supported:
+
+| CKAN Version | Solr version | Docker tag | Legacy Docker tags | Notes |
+| --- | --- | --- | --- | --- |
+| 2.9 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.9-solr9-spatial` | Requires CKAN ≥ 2.9.5 |
+| 2.9 | 8 | `ghcr.io/mjanez/ckan-solr:2.9-solr8-spatial` | Requires CKAN ≥ 2.9.5 |
+
 ## What `-spatial` adds vs upstream `ckan/ckan-solr`
 
 Same as official spatial images:
