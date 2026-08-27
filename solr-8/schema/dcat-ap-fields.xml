@@ -1,5 +1,9 @@
 <!-- DCAT-AP / DCAT-AP 3 / GeoDCAT-AP facet fields (string + docValues; extras_* is tokenized) -->
 <field name="tag_uri" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
+<!-- lookup / fq, not a facet. Must stay in sync with ckanext-schemingdcat
+     ckanext.schemingdcat.solr_multivalued_fields AFTER this image is published to GHCR.
+     Until republish, the plugin indexes leftover lists as extras_{field} (text). -->
+<field name="alternate_identifier" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
 <field name="theme" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
 <field name="theme_eu" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
 <field name="language" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>

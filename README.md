@@ -47,7 +47,7 @@ Plus DCAT facet fields (`string` + `docValues` + `multiValued`), which CKAN `ext
 | File | Fields |
 | --- | --- |
 | `spatial-types.xml` / `spatial-fields.xml` | `location_rpt`, `spatial_geom`, bbox floats, `spatial_uri` |
-| `dcat-ap-fields.xml` | `tag_uri`, `theme`, `theme_eu`, `language`, `dcat_type`, `conforms_to`, `applicable_legislation`, `hvd_category`, `publisher_name`, `publisher_type`, `frequency`, `endpoint_url`, `serves_dataset`, `reference`, `is_referenced_by`, `resource_relation`, `documentation`, `metadata_profile`, `lineage_source`, `lineage_process_steps` |
+| `dcat-ap-fields.xml` | `tag_uri`, `alternate_identifier`, `theme`, `theme_eu`, `language`, `dcat_type`, `conforms_to`, `applicable_legislation`, `hvd_category`, `publisher_name`, `publisher_type`, `frequency`, `endpoint_url`, `serves_dataset`, `reference`, `is_referenced_by`, `resource_relation`, `documentation`, `metadata_profile`, `lineage_source`, `lineage_process_steps` |
 | `dcat-ap-es-fields.xml` | `theme_es`, `dataset_scope` |
 
 `Dockerfile.spatial` concatenates the field files after `<fields>`. The stock `Dockerfile` does not.
