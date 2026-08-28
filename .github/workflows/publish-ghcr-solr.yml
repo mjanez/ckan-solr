@@ -101,6 +101,8 @@ jobs:
             echo "$SCHEMA" | grep -F 'name="dcat_type"'
             echo "$SCHEMA" | grep -F 'name="theme_es"'
             echo "$SCHEMA" | grep -F 'name="dataset_scope"'
+            docker run --rm --entrypoint ls ${{ steps.set_tag.outputs.image_tag }} \
+              /opt/solr/server/solr-webapp/webapp/WEB-INF/lib | grep jts-core
           fi
 
       - name: Run Solr container
