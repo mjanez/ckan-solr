@@ -1,0 +1,8 @@
+<!-- ckanext-spatial: solr-spatial-field (RPT/JTS) + solr-bbox -->
+<field name="spatial_geom" type="location_rpt" indexed="true" multiValued="true" />
+<field name="bbox_area" type="float" indexed="true" stored="true" />
+<field name="maxx" type="float" indexed="true" stored="true" />
+<field name="maxy" type="float" indexed="true" stored="true" />
+<field name="minx" type="float" indexed="true" stored="true" />
+<field name="miny" type="float" indexed="true" stored="true" />
+<field name="spatial_uri" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>
