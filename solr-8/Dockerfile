@@ -1,4 +1,5 @@
-FROM solr:8
+ARG SOLR_VERSION=8
+FROM solr:${SOLR_VERSION}
 
 ENV SOLR_PORT=8983
 
@@ -13,12 +14,10 @@ ENV SOLR_CKAN_DATABASE=ckan
 
 USER root
 
-# Create a CKAN configset by copying the default one
 RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/$SOLR_CKAN_DATABASE
 
-# Update the schema
 ADD https://raw.githubusercontent.com/ckan/ckan/$CKAN_BRANCH/ckan/config/solr/schema.xml $SOLR_SCHEMA_FILE
-RUN chmod 644 $SOLR_SCHEMA_FILE 
+RUN chmod 644 $SOLR_SCHEMA_FILE
 
 USER solr
 

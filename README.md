@@ -1,74 +1,74 @@
 # ckan-solr
 
->[!CAUTION]
-> Pre-configured Solr Docker images for [`ckan-docker *spatial`](https://github.com/mjanez/ckan-docker)
+Pre-configured Solr Docker images for [`ckan-docker *spatial`](https://github.com/mjanez/ckan-docker) and [`ckanext-schemingdcat`](https://github.com/mjanez/ckanext-schemingdcat).
 
-**Note:** These images are built on top of [the upstream Solr images](https://github.com/apache/solr-docker#readme). These images receive bug fixes from time to time which we pull into ours, but you won't get them unless you re-pull the CKAN Solr image.
+Published to **GHCR** as `ghcr.io/mjanez/ckan-solr`. These are **not** the official `ckan/ckan-solr` images: the `-spatial` tags add JTS + RPT geo fields **and** explicit DCAT/GeoDCAT-AP facet fields.
 
-The recommended Solr version for the currently supported CKAN version is **[Solr 9](https://solr.apache.org/downloads.html#about-versions-and-support)**.
+Images are built from [upstream Solr](https://github.com/apache/solr-docker#readme). Re-pull to pick up Solr patch releases baked at build time. Solr **9.9** is the pinned minor for Solr 9 tags.
 
-You can get a local Solr instance targeting a specific CKAN version by running the following command:
+```bash
+docker run --name ckan-solr -p 8983:8983 -d ghcr.io/mjanez/ckan-solr:2.11-solr9-spatial
+```
 
-    docker run --name ckan-solr -p 8983:8983 -d ckan/ckan-solr:2.10-solr9
+CKAN `solr_url`: **http://localhost:8983/solr/ckan**
 
-The following versions are available as different image tags:
+## Tags
 
-| CKAN Version | Solr version | Docker tag | Notes |
+| CKAN | Solr | Image | Notes |
 | --- | --- | --- | --- |
-| **2.10** | **Solr 9** | `ckan/ckan-solr:2.10-solr9` | This is the recommended version if you are unsure which one to use |
-| 2.10 | Solr 9 | `ckan/ckan-solr:2.10-solr9-spatial` | Contains fields needed for the [ckanext-spatial](https://docs.ckan.org/projects/ckanext-spatial/en/latest/spatial-search.html) geo search |
-| 2.10 | Solr 8 | `ckan/ckan-solr:2.10-solr8` | |
-| 2.10 | Solr 8 | `ckan/ckan-solr:2.10-solr8-spatial` | Contains fields needed for the [ckanext-spatial](https://docs.ckan.org/projects/ckanext-spatial/en/latest/spatial-search.html) geo search |
-| 2.9 | Solr 9 | `ckan/ckan-solr:2.9-solr9` | Requires at least CKAN 2.9.5 |
-| 2.9 | Solr 9 | `ckan/ckan-solr:2.9-solr9-spatial` | Contains fields needed for the [ckanext-spatial](https://docs.ckan.org/projects/ckanext-spatial/en/latest/spatial-search.html) geo search |
-| 2.9 | Solr 8 | `ckan/ckan-solr:2.9-solr8` | Requires at least CKAN 2.9.5 |
-| 2.9 | Solr 8 | `ckan/ckan-solr:2.9-solr8-spatial` | Contains fields needed for the [ckanext-spatial](https://docs.ckan.org/projects/ckanext-spatial/en/latest/spatial-search.html) geo search |
+| **2.11** | **9.9** | `ghcr.io/mjanez/ckan-solr:2.11-solr9-spatial` | Recommended. Also tagged `2.11-solr9.9-spatial` |
+| 2.11 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.11-solr9` | Stock CKAN schema only |
+| 2.10 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.10-solr9-spatial` | Also tagged `2.10-solr9.9-spatial` |
+| 2.10 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.10-solr9` | Stock CKAN schema only |
+| 2.10 | 8 | `ghcr.io/mjanez/ckan-solr:2.10-solr8-spatial` | Legacy Solr 8 |
+| 2.10 | 8 | `ghcr.io/mjanez/ckan-solr:2.10-solr8` | Legacy Solr 8, stock schema |
+| 2.9 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.9-solr9-spatial` | Requires CKAN ≥ 2.9.5 |
+| 2.9 | 8 | `ghcr.io/mjanez/ckan-solr:2.9-solr8-spatial` | Requires CKAN ≥ 2.9.5 |
+
+The schema `name` attribute is taken from the matching CKAN branch (`dev-v2.10` -> `ckan-2.10`, `dev-v2.11` -> `ckan-2.11`). CKAN will not start if it does not match the series.
 
 The following tags are no longer supported:
 
 | CKAN Version | Solr version | Docker tag | Legacy Docker tags | Notes |
 | --- | --- | --- | --- | --- |
-| 2.7 | Solr 6 | `ckan/ckan-solr:2.7` |  `ckan/ckan-solr-dev:2.7` | |
-| 2.8 | Solr 6 | `ckan/ckan-solr:2.8` |  `ckan/ckan-solr-dev:2.8` | |
-| 2.9 | Solr 6 | `ckan/ckan-solr:2.9` | `ckan/ckan-solr-dev:2.9` | |
+| 2.9 | 9.9 | `ghcr.io/mjanez/ckan-solr:2.9-solr9-spatial` | Requires CKAN ≥ 2.9.5 |
+| 2.9 | 8 | `ghcr.io/mjanez/ckan-solr:2.9-solr8-spatial` | Requires CKAN ≥ 2.9.5 |
 
+## What `-spatial` adds vs upstream `ckan/ckan-solr`
 
-All these images expose the CKAN Solr endpoint at **http://localhost:8983/solr/ckan**, so that's what you should set the value of `solr_url` in your ini file to.
+Same as official spatial images:
 
+- JTS Core **1.19.0**
+- `location_rpt` (`SpatialRecursivePrefixTreeFieldType`, JTS, `repairBuffer0`)
+- `spatial_geom`, `bbox_area`, `minx`, `maxx`, `miny`, `maxy`
 
+Plus DCAT facet fields (`string` + `docValues` + `multiValued`), which CKAN `extras_*` cannot facet correctly. They live under `schema/` as separate fragments so a portal can drop a profile without editing the spatial block:
 
-### Building the images
+| File | Fields |
+| --- | --- |
+| `spatial-types.xml` / `spatial-fields.xml` | `location_rpt`, `spatial_geom`, bbox floats, `spatial_uri` |
+| `dcat-ap-fields.xml` | `tag_uri`, `alternate_identifier`, `theme`, `theme_eu`, `language`, `dcat_type`, `conforms_to`, `applicable_legislation`, `hvd_category`, `publisher_name`, `publisher_type`, `frequency`, `endpoint_url`, `serves_dataset`, `reference`, `is_referenced_by`, `resource_relation`, `documentation`, `metadata_profile`, `lineage_source`, `lineage_process_steps` |
+| `dcat-ap-es-fields.xml` | `theme_es`, `dataset_scope` |
 
-Go to the relevant folder for the Solr version (eg `solr-9`) and use the Makefile included:
+`Dockerfile.spatial` concatenates the field files after `<fields>`. The stock `Dockerfile` does not.
 
-    # Default version in 2.10
-    make build
+Use `ckanext.spatial.search_backend = solr-spatial-field` with the spatial tags.
 
-    # Specify a different version
-    make build CKAN_VERSION=2.9
+## Building locally
 
+```bash
+cd solr-9
+make build                          # CKAN 2.11 / Solr 9.9
+make build CKAN_VERSION=2.10        # CKAN 2.10 / Solr 9.9
 
+cd ../solr-8
+make build CKAN_VERSION=2.10
+```
 
-### Use your own configuration files
+## Custom config files
 
-If you want to play around with the solr config files you can copy them from the container to your local host and then run the container with a bind mount.
-
-1. Run a container:
-
-       docker run --name ckan-solr -p 8983:8983 -d ckan/ckan-solr:2.10-solr9
-
-2. Copy the config file of the target core to your machine (eg `ckan`):
-
-       docker cp ckan-solr:/opt/solr/server/solr/ckan/conf ./my_conf
-
-3. Stop the container:
-
-       docker stop ckan-solr
-
-4. Run the container with a bind mount:
-
-       docker run -p 8983:8983 --mount type=bind,source="$(pwd)"/my_conf,target=/opt/solr/server/solr/ckan/conf -d ckan/ckan-solr:2.10-solr9
-
-5. Edit your local files
-
-6. Reload the core using the Solr admin page: http://localhost:8983/solr/#/~cores/
+1. `docker run --name ckan-solr -p 8983:8983 -d ghcr.io/mjanez/ckan-solr:2.11-solr9-spatial`
+2. `docker cp ckan-solr:/opt/solr/server/solr/ckan/conf ./my_conf`
+3. `docker stop ckan-solr`
+4. `docker run -p 8983:8983 --mount type=bind,source="$(pwd)"/my_conf,target=/opt/solr/server/solr/ckan/conf -d ghcr.io/mjanez/ckan-solr:2.11-solr9-spatial`
+5. Reload the core: http://localhost:8983/solr/#/~cores/

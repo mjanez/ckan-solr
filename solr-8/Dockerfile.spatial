@@ -1,4 +1,5 @@
-FROM solr:8
+ARG SOLR_VERSION=8
+FROM solr:${SOLR_VERSION}
 
 ENV SOLR_PORT=8983
 
@@ -27,48 +28,14 @@ ADD https://repo1.maven.org/maven2/org/locationtech/jts/jts-core/$JTS_VERSION/jt
     $JTS_JAR_FILE
 RUN chmod 644 $JTS_JAR_FILE
 
-# Add the spatial field type definitions and fields
-
-## RPT
-ENV SOLR_RPT_FIELD_DEFINITION '<fieldType name="location_rpt"   class="solr.SpatialRecursivePrefixTreeFieldType" \
-    spatialContextFactory="JTS"     \
-    autoIndex="true"                \
-    validationRule="repairBuffer0"  \
-    distErrPct="0.025"              \
-    maxDistErr="0.001"              \
-    distanceUnits="kilometers" />'
-
-ENV SOLR_RPT_FIELD '<field name="spatial_geom" type="location_rpt" indexed="true" multiValued="true" />'
-
-RUN sed -i "/<types>/a $SOLR_RPT_FIELD_DEFINITION" $SOLR_SCHEMA_FILE
-RUN sed -i "/<fields>/a $SOLR_RPT_FIELD" $SOLR_SCHEMA_FILE
-
-## BBox
-ENV SOLR_BBOX_FIELDS '<field name="bbox_area" type="float" indexed="true" stored="true" /> \
-    <field name="maxx" type="float" indexed="true" stored="true" /> \
-    <field name="maxy" type="float" indexed="true" stored="true" /> \
-    <field name="minx" type="float" indexed="true" stored="true" /> \
-    <field name="miny" type="float" indexed="true" stored="true" /> \
-    <field name="tag_uri" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="conforms_to" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="applicable_legislation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="lineage_source" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="lineage_process_steps" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="reference" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="is_referenced_by" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="theme" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="theme_es" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="theme_eu" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="language" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="resource_relation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="documentation" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/> \
-    <field name="metadata_profile" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>' \
-    '<field name="dcat_type" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>' \
-    '<field name="dataset_scope" type="string" uninvertible="false" docValues="true" indexed="true" stored="true" multiValued="true"/>' 
-
-RUN sed -i "/<fields>/a $SOLR_BBOX_FIELDS" $SOLR_SCHEMA_FILE
-
-RUN chmod 644 $SOLR_SCHEMA_FILE
+# Apply spatial schema fragments
+COPY schema/ /tmp/schema/
+RUN sed -i "/<types>/r /tmp/schema/spatial-types.xml" $SOLR_SCHEMA_FILE \
+    && cat /tmp/schema/spatial-fields.xml \
+           /tmp/schema/dcat-ap-fields.xml \
+           /tmp/schema/dcat-ap-es-fields.xml > /tmp/schema/extra-fields.xml \
+    && sed -i "/<fields>/r /tmp/schema/extra-fields.xml" $SOLR_SCHEMA_FILE \
+    && chmod 644 $SOLR_SCHEMA_FILE
 
 USER solr
 

@@ -1,10 +1,11 @@
-FROM solr:9
+ARG SOLR_VERSION=9.9
+FROM solr:${SOLR_VERSION}
 
 ENV SOLR_PORT=8983
 
 EXPOSE ${SOLR_PORT}
 
-ARG CKAN_BRANCH="dev-v2.10"
+ARG CKAN_BRANCH="dev-v2.11"
 
 ENV SOLR_INSTALL="/opt/solr"
 ENV SOLR_CONFIG_DIR="$SOLR_INSTALL/server/solr/configsets"
@@ -18,7 +19,7 @@ RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/$SOLR_CKAN_DATABASE
 
 # Update the schema
 ADD https://raw.githubusercontent.com/ckan/ckan/$CKAN_BRANCH/ckan/config/solr/schema.xml $SOLR_SCHEMA_FILE
-RUN chmod 644 $SOLR_SCHEMA_FILE 
+RUN chmod 644 $SOLR_SCHEMA_FILE
 
 USER solr
 
